@@ -77,6 +77,51 @@
                             <p class="text-2xl font-bold text-red-900" id="total-fat">0g</p>
                         </div>
                     </div>
+
+                    <!-- Daily Value Analysis Section -->
+                    <h3 class="text-xl font-semibold mb-4">Percentage of Daily Value</h3>
+                    <div class="space-y-4 mb-6">
+                        <!-- Calories DV -->
+                        <div id="dv-calories">
+                            <div class="flex justify-between mb-1">
+                                <span class="text-base font-medium text-blue-700">Calories</span>
+                                <span class="text-sm font-medium text-blue-700" id="dv-calories-percent">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div id="dv-calories-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <!-- Protein DV -->
+                        <div id="dv-protein">
+                             <div class="flex justify-between mb-1">
+                                <span class="text-base font-medium text-green-700">Protein</span>
+                                <span class="text-sm font-medium text-green-700" id="dv-protein-percent">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div id="dv-protein-bar" class="bg-green-600 h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <!-- Carbs DV -->
+                        <div id="dv-carbs">
+                            <div class="flex justify-between mb-1">
+                                <span class="text-base font-medium text-yellow-700">Carbohydrates</span>
+                                <span class="text-sm font-medium text-yellow-700" id="dv-carbs-percent">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div id="dv-carbs-bar" class="bg-yellow-500 h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                         <!-- Fat DV -->
+                         <div id="dv-fat">
+                            <div class="flex justify-between mb-1">
+                                <span class="text-base font-medium text-red-700">Fat</span>
+                                <span class="text-sm font-medium text-red-700" id="dv-fat-percent">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div id="dv-fat-bar" class="bg-red-600 h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
                     
                     <!-- Ingredient Breakdown Table -->
                     <h3 class="text-xl font-semibold mb-3">Ingredient Breakdown</h3>
@@ -123,6 +168,7 @@
         const errorBox = document.getElementById('error-box');
         const errorMessage = document.getElementById('error-message');
         const resultsDashboard = document.getElementById('results-dashboard');
+        const currentRecipeSection = document.getElementById('current-recipe-section');
         const recipeTitle = document.getElementById('recipe-title');
         const totalCalories = document.getElementById('total-calories');
         const totalProtein = document.getElementById('total-protein');
@@ -130,86 +176,55 @@
         const totalFat = document.getElementById('total-fat');
         const ingredientsTableBody = document.getElementById('ingredients-table-body');
         const clearComparisonBtn = document.getElementById('clear-comparison-btn');
+        const ctx = document.getElementById('comparison-chart').getContext('2d');
 
         // --- State Management ---
         let comparisonChart = null;
         let analyzedRecipes = JSON.parse(sessionStorage.getItem('analyzedRecipes')) || [];
 
-        // --- Hardcoded Nutritional Data (per 100g) ---
-        // A more robust app would use a proper API for this.
-        const NUTRITION_DATA = {
-            'flour': { calories: 364, protein: 10.3, carbs: 76.3, fat: 1.0 },
-            'all-purpose flour': { calories: 364, protein: 10.3, carbs: 76.3, fat: 1.0 },
-            'bread flour': { calories: 361, protein: 12, carbs: 73, fat: 1.8 },
-            'sugar': { calories: 387, protein: 0, carbs: 100, fat: 0 },
-            'white sugar': { calories: 387, protein: 0, carbs: 100, fat: 0 },
-            'granulated sugar': { calories: 387, protein: 0, carbs: 100, fat: 0 },
-            'brown sugar': { calories: 380, protein: 0, carbs: 98, fat: 0 },
-            'egg': { calories: 155, protein: 12.6, carbs: 1.1, fat: 10.6 },
-            'butter': { calories: 717, protein: 0.9, carbs: 0.1, fat: 81.1 },
-            'milk': { calories: 42, protein: 3.4, carbs: 5, fat: 1 },
-            'salt': { calories: 0, protein: 0, carbs: 0, fat: 0 },
-            'baking soda': { calories: 0, protein: 0, carbs: 0, fat: 0 },
-            'baking powder': { calories: 53, protein: 0, carbs: 28, fat: 0 },
-            'vanilla extract': { calories: 288, protein: 0.1, carbs: 12.7, fat: 0.1 },
-            'water': { calories: 0, protein: 0, carbs: 0, fat: 0 },
-            'olive oil': { calories: 884, protein: 0, carbs: 0, fat: 100 },
-            'chicken breast': { calories: 165, protein: 31, carbs: 0, fat: 3.6 },
-            'onion': { calories: 40, protein: 1.1, carbs: 9.3, fat: 0.1 },
-            'garlic': { calories: 149, protein: 6.4, carbs: 33.1, fat: 0.5 },
-            'tomato': { calories: 18, protein: 0.9, carbs: 3.9, fat: 0.2 },
-            'potato': { calories: 77, protein: 2, carbs: 17, fat: 0.1 },
-            'rice': { calories: 130, protein: 2.7, carbs: 28, fat: 0.3 },
-            'pasta': { calories: 131, protein: 5, carbs: 25, fat: 1.1 },
-            'beef': { calories: 250, protein: 26, carbs: 0, fat: 15 },
-            'cheddar cheese': { calories: 404, protein: 25, carbs: 1.3, fat: 33 },
-            'carrot': { calories: 41, protein: 0.9, carbs: 10, fat: 0.2 },
-            'lettuce': { calories: 15, protein: 1.4, carbs: 2.9, fat: 0.2 },
-            'apple': { calories: 52, protein: 0.3, carbs: 14, fat: 0.2 },
-            'banana': { calories: 89, protein: 1.1, carbs: 23, fat: 0.3 },
-            'chocolate chips': { calories: 535, protein: 4.9, carbs: 61, fat: 31 }
+        // --- Constants ---
+        const DAILY_VALUES = {
+            calories: 2000,
+            protein: 50, // in grams
+            carbs: 275, // in grams
+            fat: 78 // in grams
         };
 
         // --- Unit to Grams Conversion ---
-        // This is a major approximation. A real app would be more sophisticated.
         const UNIT_TO_GRAMS = {
             'gram': 1, 'grams': 1, 'g': 1,
             'kilogram': 1000, 'kilograms': 1000, 'kg': 1000,
             'ounce': 28.35, 'ounces': 28.35, 'oz': 28.35,
             'pound': 453.59, 'pounds': 453.59, 'lb': 453.59,
-            'cup': 128, 'cups': 128, // General approximation, varies by ingredient
+            'milliliter': 1, 'milliliters': 1, 'ml': 1, // Approx. 1g for water/milk
+            'liter': 1000, 'liters': 1000, 'l': 1000, // Approx. 1000g for water/milk
+            'fluid ounce': 29.57, 'fluid ounces': 29.57, 'fl oz': 29.57,
+            'cup': 128, 'cups': 128, 
             'tablespoon': 15, 'tablespoons': 15, 'tbsp': 15,
             'teaspoon': 5, 'teaspoons': 5, 'tsp': 5,
-            'large': 50, // For eggs
-            'medium': 44, // For eggs
-            'small': 38, // For eggs
+            'large': 50, 'medium': 44, 'small': 38, // For eggs
+            'egg': 50, // Default for when no size is specified
             'clove': 5, // For garlic
         };
         
-        // --- API Call Logic ---
-        async function getNutritionAnalysis(text) {
+        // --- API Call Logic (Gemini for text parsing) ---
+        async function getParsedIngredients(text) {
             setLoadingState(true);
             hideError();
-
             const model = 'gemini-2.5-flash-preview-05-20';
-            const apiKey = ""; // API key will be automatically provided by the environment
+            const apiKey = "AIzaSyBEBxbB3oK-HnU64VS1eHagTET31n9VBzU";
             const apiURL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
             const systemPrompt = `You are a food scientist. Your task is to analyze a recipe text, identify all ingredients with their quantities and units, and return the data in a structured JSON format. 
-            - Identify the name of the recipe.
+            - Identify the name of the recipe. If no name is apparent, use the list of ingredients as the name.
             - For each ingredient, extract the name, quantity, and unit.
+            - If a quantity or unit is not specified for an ingredient (e.g., "an apple" or "rice"), assume a quantity of 100 and a unit of 'g'.
             - Normalize ingredient names to their simplest form (e.g., 'large eggs' becomes 'egg').
             - If an ingredient has a qualifier like 'large', 'medium', or 'small', use that as the unit.
-            - Be precise. Only extract ingredients with clear quantities.
+            - Be precise. Only extract ingredients with clear quantities unless they are missing, in which case you apply the default.
             - The output MUST be a valid JSON object matching the provided schema.`;
-
             const payload = {
-                systemInstruction: {
-                    parts: [{ text: systemPrompt }]
-                },
-                contents: [{
-                    parts: [{ text: `Analyze this recipe:\n\n${text}` }]
-                }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                contents: [{ parts: [{ text: `Analyze this recipe:\n\n${text}` }] }],
                 generationConfig: {
                     responseMimeType: "application/json",
                     responseSchema: {
@@ -221,9 +236,9 @@
                                 items: {
                                     type: "OBJECT",
                                     properties: {
-                                        name: { type: "STRING", description: "The normalized name of the ingredient (e.g., 'flour', 'egg')." },
-                                        quantity: { type: "NUMBER", description: "The numerical quantity of the ingredient." },
-                                        unit: { type: "STRING", description: "The unit of measurement (e.g., 'cups', 'grams', 'large')." }
+                                        name: { type: "STRING" },
+                                        quantity: { type: "NUMBER" },
+                                        unit: { type: "STRING" }
                                     },
                                     required: ["name", "quantity", "unit"]
                                 }
@@ -233,65 +248,78 @@
                     }
                 }
             };
-            
             try {
                 const response = await fetch(apiURL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
                 }
-
                 const result = await response.json();
                 const jsonText = result.candidates[0]?.content?.parts[0]?.text;
-
-                if (!jsonText) {
-                    throw new Error("The API returned an empty response.");
-                }
-
-                const parsedData = JSON.parse(jsonText);
-                return parsedData;
-
+                if (!jsonText) throw new Error("The API returned an empty response.");
+                return JSON.parse(jsonText);
             } catch (error) {
-                console.error("API Error:", error);
-                showError(error.message);
+                console.error("Gemini API Error:", error);
+                showError(`Ingredient Parsing Failed: ${error.message}`);
                 return null;
             } finally {
                 setLoadingState(false);
             }
         }
+
+        // --- Data Fetching (Open Food Facts API) ---
+        async function getNutritionForIngredient(ingredientName) {
+            const searchUrl = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(ingredientName)}&search_simple=1&action=process&json=1`;
+            try {
+                const response = await fetch(searchUrl);
+                if (!response.ok) return null;
+                const data = await response.json();
+                if (data.products && data.products.length > 0) {
+                    const product = data.products[0];
+                    const nutriments = product.nutriments;
+                    return {
+                        calories: nutriments['energy-kcal_100g'] || 0,
+                        protein: nutriments.proteins_100g || 0,
+                        carbs: nutriments.carbohydrates_100g || 0,
+                        fat: nutriments.fat_100g || 0,
+                    };
+                }
+                return null;
+            } catch (error) {
+                console.error(`Open Food Facts API Error for ${ingredientName}:`, error);
+                return null;
+            }
+        }
         
         // --- Data Processing and Calculation ---
-        function calculateNutrition(ingredients) {
+        async function calculateNutrition(ingredients) {
             let total = { calories: 0, protein: 0, carbs: 0, fat: 0 };
             const breakdown = [];
-
-            ingredients.forEach(ing => {
+            for (const ing of ingredients) {
                 const ingredientName = ing.name.toLowerCase().trim();
-                const unit = ing.unit.toLowerCase().trim();
-                
-                // Find a matching nutrition entry (simple search)
-                const nutritionKey = Object.keys(NUTRITION_DATA).find(key => ingredientName.includes(key));
-                const nutritionInfo = nutritionKey ? NUTRITION_DATA[nutritionKey] : null;
+                let unit = ing.unit.toLowerCase().trim(); // Use let to allow modification
 
+                // Handle cases where LLM returns a generic unit but the ingredient name itself is a key in our conversion map (e.g., "egg")
+                if ((unit === 'unit' || !unit) && UNIT_TO_GRAMS[ingredientName]) {
+                    unit = ingredientName;
+                }
+
+                const nutritionInfo = await getNutritionForIngredient(ingredientName);
                 const conversionFactor = UNIT_TO_GRAMS[unit] || (unit.endsWith('s') ? UNIT_TO_GRAMS[unit.slice(0, -1)] : 0);
-
                 if (nutritionInfo && conversionFactor) {
                     const grams = ing.quantity * conversionFactor;
                     const scale = grams / 100;
-
                     const ingNutrition = {
                         name: `${ing.quantity} ${ing.unit} ${ing.name}`,
-                        calories: nutritionInfo.calories * scale,
-                        protein: nutritionInfo.protein * scale,
-                        carbs: nutritionInfo.carbs * scale,
-                        fat: nutritionInfo.fat * scale
+                        calories: (nutritionInfo.calories || 0) * scale,
+                        protein: (nutritionInfo.protein || 0) * scale,
+                        carbs: (nutritionInfo.carbs || 0) * scale,
+                        fat: (nutritionInfo.fat || 0) * scale
                     };
-
                     breakdown.push(ingNutrition);
                     total.calories += ingNutrition.calories;
                     total.protein += ingNutrition.protein;
@@ -303,20 +331,46 @@
                         calories: 0, protein: 0, carbs: 0, fat: 0
                     });
                 }
-            });
-
+            }
             return { total, breakdown };
         }
 
         // --- UI Rendering ---
-        function displayResults(data) {
-            const { total, breakdown } = calculateNutrition(data.ingredients);
+        function updateDailyValueDisplay(totals) {
+            const dvCaloriesPercent = (totals.calories / DAILY_VALUES.calories) * 100;
+            document.getElementById('dv-calories-percent').textContent = `${Math.round(dvCaloriesPercent)}%`;
+            document.getElementById('dv-calories-bar').style.width = `${Math.min(dvCaloriesPercent, 100)}%`;
+
+            const dvProteinPercent = (totals.protein / DAILY_VALUES.protein) * 100;
+            document.getElementById('dv-protein-percent').textContent = `${Math.round(dvProteinPercent)}%`;
+            document.getElementById('dv-protein-bar').style.width = `${Math.min(dvProteinPercent, 100)}%`;
+
+            const dvCarbsPercent = (totals.carbs / DAILY_VALUES.carbs) * 100;
+            document.getElementById('dv-carbs-percent').textContent = `${Math.round(dvCarbsPercent)}%`;
+            document.getElementById('dv-carbs-bar').style.width = `${Math.min(dvCarbsPercent, 100)}%`;
+
+            const dvFatPercent = (totals.fat / DAILY_VALUES.fat) * 100;
+            document.getElementById('dv-fat-percent').textContent = `${Math.round(dvFatPercent)}%`;
+            document.getElementById('dv-fat-bar').style.width = `${Math.min(dvFatPercent, 100)}%`;
+        }
+
+        async function displayResults(data) {
+            setLoadingState(true);
+            const { total, breakdown } = await calculateNutrition(data.ingredients);
+            setLoadingState(false);
+            
+            // Part 1: Update the current recipe view
+            resultsDashboard.classList.remove('hidden');
+            currentRecipeSection.classList.remove('hidden');
 
             recipeTitle.textContent = data.recipeName || "Nutritional Analysis";
+
             totalCalories.textContent = Math.round(total.calories);
-            totalProtein.textContent = `${total.protein.toFixed(1)}g`;
-            totalCarbs.textContent = `${total.carbs.toFixed(1)}g`;
-            totalFat.textContent = `${total.fat.toFixed(1)}g`;
+            totalProtein.textContent = `${Math.round(total.protein)}g`;
+            totalCarbs.textContent = `${Math.round(total.carbs)}g`;
+            totalFat.textContent = `${Math.round(total.fat)}g`;
+
+            updateDailyValueDisplay(total);
 
             ingredientsTableBody.innerHTML = '';
             breakdown.forEach(ing => {
@@ -324,41 +378,43 @@
                     <tr class="border-b border-gray-200">
                         <td class="py-2 px-4">${ing.name}</td>
                         <td class="py-2 px-4">${Math.round(ing.calories)}</td>
-                        <td class="py-2 px-4">${ing.protein.toFixed(1)}g</td>
-                        <td class="py-2 px-4">${ing.carbs.toFixed(1)}g</td>
-                        <td class="py-2 px-4">${ing.fat.toFixed(1)}g</td>
+                        <td class="py-2 px-4">${Math.round(ing.protein)}g</td>
+                        <td class="py-2 px-4">${Math.round(ing.carbs)}g</td>
+                        <td class="py-2 px-4">${Math.round(ing.fat)}g</td>
                     </tr>
                 `;
-                ingredientsTableBody.innerHTML += row;
+                ingredientsTableBody.insertAdjacentHTML('beforeend', row);
             });
 
-            // Add to comparison data
-            const newRecipeData = {
-                name: data.recipeName || `Recipe ${analyzedRecipes.length + 1}`,
+            // Part 2: Update the comparison data and chart
+            const currentRecipeData = {
+                name: data.recipeName || `Recipe #${analyzedRecipes.length + 1}`,
                 ...total
             };
-            analyzedRecipes.push(newRecipeData);
-            // Limit to last 5 recipes for clarity
-            if (analyzedRecipes.length > 5) {
-                analyzedRecipes.shift();
+            
+            if (analyzedRecipes.length >= 5) {
+                analyzedRecipes.shift(); // Keep only last 5
             }
+            analyzedRecipes.push(currentRecipeData);
             sessionStorage.setItem('analyzedRecipes', JSON.stringify(analyzedRecipes));
 
             updateComparisonChart();
-            resultsDashboard.classList.remove('hidden');
-            resultsDashboard.scrollIntoView({ behavior: 'smooth' });
         }
-
+        
         function updateComparisonChart() {
-            const ctx = document.getElementById('comparison-chart').getContext('2d');
             const labels = analyzedRecipes.map(r => r.name);
-            const calorieData = analyzedRecipes.map(r => r.calories);
-            const proteinData = analyzedRecipes.map(r => r.protein);
-            const carbData = analyzedRecipes.map(r => r.carbs);
-            const fatData = analyzedRecipes.map(r => r.fat);
-
+            const calorieData = analyzedRecipes.map(r => Math.round((r.calories / DAILY_VALUES.calories) * 100));
+            const proteinData = analyzedRecipes.map(r => Math.round((r.protein / DAILY_VALUES.protein) * 100));
+            const carbData = analyzedRecipes.map(r => Math.round((r.carbs / DAILY_VALUES.carbs) * 100));
+            const fatData = analyzedRecipes.map(r => Math.round((r.fat / DAILY_VALUES.fat) * 100));
+            
             if (comparisonChart) {
                 comparisonChart.destroy();
+            }
+
+            if (labels.length === 0) {
+                // Optionally hide the chart container if there's no data
+                return;
             }
 
             comparisonChart = new Chart(ctx, {
@@ -366,99 +422,61 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        {
-                            label: 'Calories',
-                            data: calorieData,
-                            backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                            borderColor: 'rgba(59, 130, 246, 1)',
-                            borderWidth: 1,
-                            yAxisID: 'y'
-                        },
-                        {
-                            label: 'Protein (g)',
-                            data: proteinData,
-                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
-                            borderColor: 'rgba(16, 185, 129, 1)',
-                            borderWidth: 1,
-                             yAxisID: 'y1'
-                        },
-                        {
-                            label: 'Carbs (g)',
-                            data: carbData,
-                            backgroundColor: 'rgba(234, 179, 8, 0.7)',
-                            borderColor: 'rgba(234, 179, 8, 1)',
-                            borderWidth: 1,
-                             yAxisID: 'y1'
-                        },
-                        {
-                            label: 'Fat (g)',
-                            data: fatData,
-                            backgroundColor: 'rgba(239, 68, 68, 0.7)',
-                            borderColor: 'rgba(239, 68, 68, 1)',
-                            borderWidth: 1,
-                             yAxisID: 'y1'
-                        }
+                        { label: 'Calories (% DV)', data: calorieData, backgroundColor: 'rgba(59, 130, 246, 0.7)'},
+                        { label: 'Protein (% DV)', data: proteinData, backgroundColor: 'rgba(16, 185, 129, 0.7)'},
+                        { label: 'Carbs (% DV)', data: carbData, backgroundColor: 'rgba(234, 179, 8, 0.7)'},
+                        { label: 'Fat (% DV)', data: fatData, backgroundColor: 'rgba(239, 68, 68, 0.7)'}
                     ]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
                     scales: {
-                        y: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
-                            title: {
-                                display: true,
-                                text: 'Calories'
+                        y: { 
+                            type: 'linear', 
+                            display: true, 
+                            position: 'left', 
+                            title: { display: true, text: '% of Daily Value' },
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
                             }
                         },
-                        y1: {
-                           type: 'linear',
-                           display: true,
-                           position: 'right',
-                           title: {
-                               display: true,
-                               text: 'Macronutrients (g)'
-                           },
-                           grid: {
-                               drawOnChartArea: false, 
-                           },
-                        }
                     },
-                    plugins: {
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false
-                        }
+                    plugins: { 
+                        tooltip: { 
+                            mode: 'index', 
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        } 
                     }
                 }
             });
         }
-        
+
         // --- UI State Changers ---
         function setLoadingState(isLoading) {
-            if (isLoading) {
-                analyzeButton.disabled = true;
-                loadingSpinner.classList.remove('hidden');
-                analyzeIcon.classList.add('hidden');
-                buttonText.textContent = 'Analyzing...';
-            } else {
-                analyzeButton.disabled = false;
-                loadingSpinner.classList.add('hidden');
-                analyzeIcon.classList.remove('hidden');
-                buttonText.textContent = 'Analyze Nutrition';
-            }
+            analyzeButton.disabled = isLoading;
+            loadingSpinner.classList.toggle('hidden', !isLoading);
+            analyzeIcon.classList.toggle('hidden', isLoading);
+            buttonText.textContent = isLoading ? 'Analyzing...' : 'Analyze Nutrition';
         }
-
         function showError(message) {
             errorMessage.textContent = message;
             errorBox.classList.remove('hidden');
         }
-
-        function hideError() {
-            errorBox.classList.add('hidden');
-        }
+        function hideError() { errorBox.classList.add('hidden'); }
 
         // --- Event Listeners ---
         recipeForm.addEventListener('submit', async (e) => {
@@ -468,28 +486,21 @@
                 showError("Please enter some recipe text to analyze.");
                 return;
             }
-            const analysisData = await getNutritionAnalysis(recipeText);
-            if (analysisData) {
-                displayResults(analysisData);
-            }
+            const analysisData = await getParsedIngredients(recipeText);
+            if (analysisData) await displayResults(analysisData);
         });
-        
         clearComparisonBtn.addEventListener('click', () => {
             analyzedRecipes = [];
             sessionStorage.removeItem('analyzedRecipes');
             updateComparisonChart();
         });
-        
-        // --- Initial Load ---
         document.addEventListener('DOMContentLoaded', () => {
             if (analyzedRecipes.length > 0) {
                  updateComparisonChart();
                  resultsDashboard.classList.remove('hidden');
-                 // Hide current recipe section until a new one is analyzed
-                 document.getElementById('current-recipe-section').classList.add('hidden');
+                 currentRecipeSection.classList.add('hidden');
             }
         });
-
     </script>
 </body>
 </html>
