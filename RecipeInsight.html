@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text-to-Nutrition Insights</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            height: 40vh;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-6xl">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Text-to-Nutrition Insights</h1>
+            <p class="mt-2 text-lg text-gray-600">Paste any recipe text to instantly analyze its nutritional content.</p>
+        </header>
+
+        <main>
+            <!-- Input Section -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Enter Recipe Text</h2>
+                <form id="recipe-form">
+                    <textarea id="recipe-input" class="w-full h-48 p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200" placeholder="Paste your recipe here...\n\nExample:\n2 large eggs\n1 cup all-purpose flour\n1/2 cup sugar\n..."></textarea>
+                    <button type="submit" id="analyze-button" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 transform hover:scale-105 flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed">
+                        <svg id="analyze-icon" class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M12 21a9 9 0 110-18 9 9 0 010 18z"></path></svg>
+                        <svg id="loading-spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span id="button-text">Analyze Nutrition</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Error Display -->
+            <div id="error-box" class="hidden mt-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl" role="alert">
+                <strong class="font-bold">Error:</strong>
+                <span class="block sm:inline" id="error-message">Something went wrong.</span>
+            </div>
+            
+            <!-- Results Dashboard -->
+            <div id="results-dashboard" class="hidden mt-8">
+                <!-- Current Recipe Analysis -->
+                <div id="current-recipe-section" class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 mb-8">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800" id="recipe-title">Nutritional Analysis</h2>
+                    
+                    <!-- Macro Cards -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-center">
+                        <div class="bg-blue-100 p-4 rounded-xl">
+                            <h3 class="text-sm font-medium text-blue-800">Calories</h3>
+                            <p class="text-2xl font-bold text-blue-900" id="total-calories">0</p>
+                        </div>
+                        <div class="bg-green-100 p-4 rounded-xl">
+                            <h3 class="text-sm font-medium text-green-800">Protein</h3>
+                            <p class="text-2xl font-bold text-green-900" id="total-protein">0g</p>
+                        </div>
+                        <div class="bg-yellow-100 p-4 rounded-xl">
+                            <h3 class="text-sm font-medium text-yellow-800">Carbs</h3>
+                            <p class="text-2xl font-bold text-yellow-900" id="total-carbs">0g</p>
+                        </div>
+                        <div class="bg-red-100 p-4 rounded-xl">
+                            <h3 class="text-sm font-medium text-red-800">Fat</h3>
+                            <p class="text-2xl font-bold text-red-900" id="total-fat">0g</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Ingredient Breakdown Table -->
+                    <h3 class="text-xl font-semibold mb-3">Ingredient Breakdown</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="py-2 px-4 text-left text-sm font-semibold text-gray-600">Ingredient</th>
+                                    <th class="py-2 px-4 text-left text-sm font-semibold text-gray-600">Calories</th>
+                                    <th class="py-2 px-4 text-left text-sm font-semibold text-gray-600">Protein</th>
+                                    <th class="py-2 px-4 text-left text-sm font-semibold text-gray-600">Carbs</th>
+                                    <th class="py-2 px-4 text-left text-sm font-semibold text-gray-600">Fat</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ingredients-table-body">
+                                <!-- Rows will be injected here by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Recipe Comparison -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-semibold text-gray-800">Recipe Comparison</h2>
+                        <button id="clear-comparison-btn" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition-colors text-sm">Clear History</button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="comparison-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const recipeForm = document.getElementById('recipe-form');
+        const recipeInput = document.getElementById('recipe-input');
+        const analyzeButton = document.getElementById('analyze-button');
+        const buttonText = document.getElementById('button-text');
+        const analyzeIcon = document.getElementById('analyze-icon');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const errorBox = document.getElementById('error-box');
+        const errorMessage = document.getElementById('error-message');
+        const resultsDashboard = document.getElementById('results-dashboard');
+        const recipeTitle = document.getElementById('recipe-title');
+        const totalCalories = document.getElementById('total-calories');
+        const totalProtein = document.getElementById('total-protein');
+        const totalCarbs = document.getElementById('total-carbs');
+        const totalFat = document.getElementById('total-fat');
+        const ingredientsTableBody = document.getElementById('ingredients-table-body');
+        const clearComparisonBtn = document.getElementById('clear-comparison-btn');
+
+        // --- State Management ---
+        let comparisonChart = null;
+        let analyzedRecipes = JSON.parse(sessionStorage.getItem('analyzedRecipes')) || [];
+
+        // --- Hardcoded Nutritional Data (per 100g) ---
+        // A more robust app would use a proper API for this.
+        const NUTRITION_DATA = {
+            'flour': { calories: 364, protein: 10.3, carbs: 76.3, fat: 1.0 },
+            'all-purpose flour': { calories: 364, protein: 10.3, carbs: 76.3, fat: 1.0 },
+            'bread flour': { calories: 361, protein: 12, carbs: 73, fat: 1.8 },
+            'sugar': { calories: 387, protein: 0, carbs: 100, fat: 0 },
+            'white sugar': { calories: 387, protein: 0, carbs: 100, fat: 0 },
+            'granulated sugar': { calories: 387, protein: 0, carbs: 100, fat: 0 },
+            'brown sugar': { calories: 380, protein: 0, carbs: 98, fat: 0 },
+            'egg': { calories: 155, protein: 12.6, carbs: 1.1, fat: 10.6 },
+            'butter': { calories: 717, protein: 0.9, carbs: 0.1, fat: 81.1 },
+            'milk': { calories: 42, protein: 3.4, carbs: 5, fat: 1 },
+            'salt': { calories: 0, protein: 0, carbs: 0, fat: 0 },
+            'baking soda': { calories: 0, protein: 0, carbs: 0, fat: 0 },
+            'baking powder': { calories: 53, protein: 0, carbs: 28, fat: 0 },
+            'vanilla extract': { calories: 288, protein: 0.1, carbs: 12.7, fat: 0.1 },
+            'water': { calories: 0, protein: 0, carbs: 0, fat: 0 },
+            'olive oil': { calories: 884, protein: 0, carbs: 0, fat: 100 },
+            'chicken breast': { calories: 165, protein: 31, carbs: 0, fat: 3.6 },
+            'onion': { calories: 40, protein: 1.1, carbs: 9.3, fat: 0.1 },
+            'garlic': { calories: 149, protein: 6.4, carbs: 33.1, fat: 0.5 },
+            'tomato': { calories: 18, protein: 0.9, carbs: 3.9, fat: 0.2 },
+            'potato': { calories: 77, protein: 2, carbs: 17, fat: 0.1 },
+            'rice': { calories: 130, protein: 2.7, carbs: 28, fat: 0.3 },
+            'pasta': { calories: 131, protein: 5, carbs: 25, fat: 1.1 },
+            'beef': { calories: 250, protein: 26, carbs: 0, fat: 15 },
+            'cheddar cheese': { calories: 404, protein: 25, carbs: 1.3, fat: 33 },
+            'carrot': { calories: 41, protein: 0.9, carbs: 10, fat: 0.2 },
+            'lettuce': { calories: 15, protein: 1.4, carbs: 2.9, fat: 0.2 },
+            'apple': { calories: 52, protein: 0.3, carbs: 14, fat: 0.2 },
+            'banana': { calories: 89, protein: 1.1, carbs: 23, fat: 0.3 },
+            'chocolate chips': { calories: 535, protein: 4.9, carbs: 61, fat: 31 }
+        };
+
+        // --- Unit to Grams Conversion ---
+        // This is a major approximation. A real app would be more sophisticated.
+        const UNIT_TO_GRAMS = {
+            'gram': 1, 'grams': 1, 'g': 1,
+            'kilogram': 1000, 'kilograms': 1000, 'kg': 1000,
+            'ounce': 28.35, 'ounces': 28.35, 'oz': 28.35,
+            'pound': 453.59, 'pounds': 453.59, 'lb': 453.59,
+            'cup': 128, 'cups': 128, // General approximation, varies by ingredient
+            'tablespoon': 15, 'tablespoons': 15, 'tbsp': 15,
+            'teaspoon': 5, 'teaspoons': 5, 'tsp': 5,
+            'large': 50, // For eggs
+            'medium': 44, // For eggs
+            'small': 38, // For eggs
+            'clove': 5, // For garlic
+        };
+        
+        // --- API Call Logic ---
+        async function getNutritionAnalysis(text) {
+            setLoadingState(true);
+            hideError();
+
+            const model = 'gemini-2.5-flash-preview-05-20';
+            const apiKey = ""; // API key will be automatically provided by the environment
+            const apiURL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+            const systemPrompt = `You are a food scientist. Your task is to analyze a recipe text, identify all ingredients with their quantities and units, and return the data in a structured JSON format. 
+            - Identify the name of the recipe.
+            - For each ingredient, extract the name, quantity, and unit.
+            - Normalize ingredient names to their simplest form (e.g., 'large eggs' becomes 'egg').
+            - If an ingredient has a qualifier like 'large', 'medium', or 'small', use that as the unit.
+            - Be precise. Only extract ingredients with clear quantities.
+            - The output MUST be a valid JSON object matching the provided schema.`;
+
+            const payload = {
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+                contents: [{
+                    parts: [{ text: `Analyze this recipe:\n\n${text}` }]
+                }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            recipeName: { type: "STRING", description: "The name of the recipe." },
+                            ingredients: {
+                                type: "ARRAY",
+                                items: {
+                                    type: "OBJECT",
+                                    properties: {
+                                        name: { type: "STRING", description: "The normalized name of the ingredient (e.g., 'flour', 'egg')." },
+                                        quantity: { type: "NUMBER", description: "The numerical quantity of the ingredient." },
+                                        unit: { type: "STRING", description: "The unit of measurement (e.g., 'cups', 'grams', 'large')." }
+                                    },
+                                    required: ["name", "quantity", "unit"]
+                                }
+                            }
+                        },
+                        required: ["recipeName", "ingredients"]
+                    }
+                }
+            };
+            
+            try {
+                const response = await fetch(apiURL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const jsonText = result.candidates[0]?.content?.parts[0]?.text;
+
+                if (!jsonText) {
+                    throw new Error("The API returned an empty response.");
+                }
+
+                const parsedData = JSON.parse(jsonText);
+                return parsedData;
+
+            } catch (error) {
+                console.error("API Error:", error);
+                showError(error.message);
+                return null;
+            } finally {
+                setLoadingState(false);
+            }
+        }
+        
+        // --- Data Processing and Calculation ---
+        function calculateNutrition(ingredients) {
+            let total = { calories: 0, protein: 0, carbs: 0, fat: 0 };
+            const breakdown = [];
+
+            ingredients.forEach(ing => {
+                const ingredientName = ing.name.toLowerCase().trim();
+                const unit = ing.unit.toLowerCase().trim();
+                
+                // Find a matching nutrition entry (simple search)
+                const nutritionKey = Object.keys(NUTRITION_DATA).find(key => ingredientName.includes(key));
+                const nutritionInfo = nutritionKey ? NUTRITION_DATA[nutritionKey] : null;
+
+                const conversionFactor = UNIT_TO_GRAMS[unit] || (unit.endsWith('s') ? UNIT_TO_GRAMS[unit.slice(0, -1)] : 0);
+
+                if (nutritionInfo && conversionFactor) {
+                    const grams = ing.quantity * conversionFactor;
+                    const scale = grams / 100;
+
+                    const ingNutrition = {
+                        name: `${ing.quantity} ${ing.unit} ${ing.name}`,
+                        calories: nutritionInfo.calories * scale,
+                        protein: nutritionInfo.protein * scale,
+                        carbs: nutritionInfo.carbs * scale,
+                        fat: nutritionInfo.fat * scale
+                    };
+
+                    breakdown.push(ingNutrition);
+                    total.calories += ingNutrition.calories;
+                    total.protein += ingNutrition.protein;
+                    total.carbs += ingNutrition.carbs;
+                    total.fat += ingNutrition.fat;
+                } else {
+                     breakdown.push({
+                        name: `${ing.quantity} ${ing.unit} ${ing.name} (data not found)`,
+                        calories: 0, protein: 0, carbs: 0, fat: 0
+                    });
+                }
+            });
+
+            return { total, breakdown };
+        }
+
+        // --- UI Rendering ---
+        function displayResults(data) {
+            const { total, breakdown } = calculateNutrition(data.ingredients);
+
+            recipeTitle.textContent = data.recipeName || "Nutritional Analysis";
+            totalCalories.textContent = Math.round(total.calories);
+            totalProtein.textContent = `${total.protein.toFixed(1)}g`;
+            totalCarbs.textContent = `${total.carbs.toFixed(1)}g`;
+            totalFat.textContent = `${total.fat.toFixed(1)}g`;
+
+            ingredientsTableBody.innerHTML = '';
+            breakdown.forEach(ing => {
+                const row = `
+                    <tr class="border-b border-gray-200">
+                        <td class="py-2 px-4">${ing.name}</td>
+                        <td class="py-2 px-4">${Math.round(ing.calories)}</td>
+                        <td class="py-2 px-4">${ing.protein.toFixed(1)}g</td>
+                        <td class="py-2 px-4">${ing.carbs.toFixed(1)}g</td>
+                        <td class="py-2 px-4">${ing.fat.toFixed(1)}g</td>
+                    </tr>
+                `;
+                ingredientsTableBody.innerHTML += row;
+            });
+
+            // Add to comparison data
+            const newRecipeData = {
+                name: data.recipeName || `Recipe ${analyzedRecipes.length + 1}`,
+                ...total
+            };
+            analyzedRecipes.push(newRecipeData);
+            // Limit to last 5 recipes for clarity
+            if (analyzedRecipes.length > 5) {
+                analyzedRecipes.shift();
+            }
+            sessionStorage.setItem('analyzedRecipes', JSON.stringify(analyzedRecipes));
+
+            updateComparisonChart();
+            resultsDashboard.classList.remove('hidden');
+            resultsDashboard.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function updateComparisonChart() {
+            const ctx = document.getElementById('comparison-chart').getContext('2d');
+            const labels = analyzedRecipes.map(r => r.name);
+            const calorieData = analyzedRecipes.map(r => r.calories);
+            const proteinData = analyzedRecipes.map(r => r.protein);
+            const carbData = analyzedRecipes.map(r => r.carbs);
+            const fatData = analyzedRecipes.map(r => r.fat);
+
+            if (comparisonChart) {
+                comparisonChart.destroy();
+            }
+
+            comparisonChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Calories',
+                            data: calorieData,
+                            backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            borderWidth: 1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Protein (g)',
+                            data: proteinData,
+                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                            borderColor: 'rgba(16, 185, 129, 1)',
+                            borderWidth: 1,
+                             yAxisID: 'y1'
+                        },
+                        {
+                            label: 'Carbs (g)',
+                            data: carbData,
+                            backgroundColor: 'rgba(234, 179, 8, 0.7)',
+                            borderColor: 'rgba(234, 179, 8, 1)',
+                            borderWidth: 1,
+                             yAxisID: 'y1'
+                        },
+                        {
+                            label: 'Fat (g)',
+                            data: fatData,
+                            backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                            borderColor: 'rgba(239, 68, 68, 1)',
+                            borderWidth: 1,
+                             yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Calories'
+                            }
+                        },
+                        y1: {
+                           type: 'linear',
+                           display: true,
+                           position: 'right',
+                           title: {
+                               display: true,
+                               text: 'Macronutrients (g)'
+                           },
+                           grid: {
+                               drawOnChartArea: false, 
+                           },
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    }
+                }
+            });
+        }
+        
+        // --- UI State Changers ---
+        function setLoadingState(isLoading) {
+            if (isLoading) {
+                analyzeButton.disabled = true;
+                loadingSpinner.classList.remove('hidden');
+                analyzeIcon.classList.add('hidden');
+                buttonText.textContent = 'Analyzing...';
+            } else {
+                analyzeButton.disabled = false;
+                loadingSpinner.classList.add('hidden');
+                analyzeIcon.classList.remove('hidden');
+                buttonText.textContent = 'Analyze Nutrition';
+            }
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorBox.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorBox.classList.add('hidden');
+        }
+
+        // --- Event Listeners ---
+        recipeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const recipeText = recipeInput.value.trim();
+            if (!recipeText) {
+                showError("Please enter some recipe text to analyze.");
+                return;
+            }
+            const analysisData = await getNutritionAnalysis(recipeText);
+            if (analysisData) {
+                displayResults(analysisData);
+            }
+        });
+        
+        clearComparisonBtn.addEventListener('click', () => {
+            analyzedRecipes = [];
+            sessionStorage.removeItem('analyzedRecipes');
+            updateComparisonChart();
+        });
+        
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            if (analyzedRecipes.length > 0) {
+                 updateComparisonChart();
+                 resultsDashboard.classList.remove('hidden');
+                 // Hide current recipe section until a new one is analyzed
+                 document.getElementById('current-recipe-section').classList.add('hidden');
+            }
+        });
+
+    </script>
+</body>
+</html>
