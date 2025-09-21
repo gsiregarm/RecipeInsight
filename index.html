@@ -34,7 +34,10 @@
             <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
                 <h2 class="text-2xl font-semibold mb-4 text-gray-800">Enter Recipe Text</h2>
                 <form id="recipe-form">
-                    <textarea id="recipe-input" class="w-full h-48 p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200" placeholder="Paste your recipe here...\n\nExample:\n2 large eggs\n1 cup all-purpose flour\n1/2 cup sugar\n..."></textarea>
+                    <textarea id="recipe-input" class="w-full h-48 p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200" placeholder="Paste your recipe here.. Example: 2 large eggs
+                        1 cup all-purpose flour 
+                        1/2 cup sugar
+                        press the Analyze Nutrition button"></textarea>
                     <button type="submit" id="analyze-button" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 transform hover:scale-105 flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed">
                         <svg id="analyze-icon" class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M12 21a9 9 0 110-18 9 9 0 010 18z"></path></svg>
                         <svg id="loading-spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
